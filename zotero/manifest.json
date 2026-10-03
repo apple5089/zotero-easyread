@@ -1,0 +1,12 @@
+{
+  "manifest_version": 2,
+  "name": "Zotero → EasyRead",
+  "version": "0.1.0",
+  "description": "右键用 EasyRead 阅读 PDF，将划线、笔记和保存的 AI 回答回写到 Zotero。",
+  "author": "apple5089",
+  "applications": {"zotero": {
+    "id": "zotero-easyread@local.research",
+    "strict_min_version": "8.0",
+    "strict_max_version": "10.0.*"
+  }}
+}

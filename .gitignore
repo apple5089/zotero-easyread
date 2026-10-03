@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+dist/
+backups/
+reference/
+test-work/
+installation.json
+*.log
+.env
+*.sqlite*
+*.asar
+*.pdf
+node_modules/
