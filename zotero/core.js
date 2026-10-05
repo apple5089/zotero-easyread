@@ -1,6 +1,13 @@
 /* SPDX-License-Identifier: MIT -- Pure data conversion, also exercised in Node. */
 var EasyReadCore = {
   validID(id) { return typeof id === "string" && /^[A-Za-z0-9_-]{4,64}$/.test(id); },
+  officialOpen(id, anchor = "", sha256 = "") {
+    if (!this.validID(id)) throw new Error("无效的 EasyRead 论文标识。");
+    if (sha256 && !/^[a-f0-9]{64}$/.test(sha256)) throw new Error("无效的 PDF 指纹。");
+    const block = String(anchor).split("#")[0];
+    if (block && !/^[A-Za-z0-9_-]{1,64}$/.test(block)) throw new Error("无效的 EasyRead 段落标识。");
+    return "open?" + (sha256 ? "sha256=" + sha256 : "id=" + id) + (block ? "&block=" + block : "");
+  },
   validBase(url) {
     return typeof url === "string" && /^http:\/\/127\.0\.0\.1:([1-9][0-9]{0,4})$/.test(url)
       && Number(url.split(":").pop()) <= 65535;

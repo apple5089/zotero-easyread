@@ -14,7 +14,7 @@ async function runNativeTests() {
     const article=new Zotero.Item("journalArticle");article.setField("title","Native integration test");await article.saveTx();
     const attachment=await Zotero.Attachments.importFromFile({file:PathUtils.join(TEST_ROOT,"fixtures","alpha.pdf"),parentItemID:article.id});
     let files=await owner.prepare([article,attachment]);check("parent and attachment selection deduplicated",files.length===1);
-    const conn=await owner.connect();const first=await owner.ensurePaper(files[0],conn,false);
+    const conn=await owner.connect();report.api=conn.api;report.easyreadVersion=conn.version;const first=await owner.ensurePaper(files[0],conn,false);
     const second=await owner.ensurePaper(files[0],conn,false);check("repeated send reuses PDF",first.id===second.id);
     article.setField("title","Renamed article");await article.saveTx();files=await owner.prepare([article]);
     check("renaming does not break association",(await owner.ensurePaper(files[0],conn,false)).id===first.id);
@@ -32,7 +32,7 @@ async function runNativeTests() {
       {op:"paper_note",body:"整篇阅读心得",at}
     ]});
     await owner.writeJSON(PathUtils.join(owner.home(),"library",first.id,"discussion.json"),{schema:2,entries:[{id:"d-test",anchor:"test-p1",kind:"qa",title:"保存的回答",body:"AI 解释",at}]});
-    let state=await owner.request(conn,`/api/p/${first.id}/state`);
+    let state=await owner.readingState(conn,first.id);
     check("EasyRead note operations persisted",Object.values(state.reader.notes).some(x=>x.body==="第一条心得"));
     const created=await owner.saveNote(files[0],first,state);check("reading note created",created.changed);
     check("unchanged sync creates no duplicate",!(await owner.saveNote(files[0],first,state)).changed);
@@ -43,14 +43,14 @@ async function runNativeTests() {
     check("stable reading link saved",note.getNote().includes("zotero://easyread/"));
     const later=new Date(Date.now()+1000).toISOString();
     await owner.request(conn,`/api/p/${first.id}/ops`,{client:"test",ops:[{op:"note",note:{id:"n-test",anchor:"test-p1",key:"test-p1",kind:"note",body:"更新后的心得",updated:later},at:later}]});
-    state=await owner.request(conn,`/api/p/${first.id}/state`);await owner.saveNote(files[0],first,state);
+    state=await owner.readingState(conn,first.id);await owner.saveNote(files[0],first,state);
     check("changed EasyRead note updates same child",article.getNotes().length===1&&note.getNote().includes("更新后的心得"));
     note.setNote(note.getNote()+"<p>MANUAL USER EDIT</p>");await note.saveTx();
     const preserved=await owner.saveNote(files[0],first,state);
     check("manual edits preserved in separate version",preserved.preserved&&article.getNotes().length===2&&note.getNote().includes("MANUAL USER EDIT"));
     const deletedAt=new Date(Date.now()+2000).toISOString();
     await owner.request(conn,`/api/p/${first.id}/ops`,{client:"test",ops:[{op:"note_del",id:"n-test",at:deletedAt}]});
-    state=await owner.request(conn,`/api/p/${first.id}/state`);await owner.saveNote(files[0],first,state);
+    state=await owner.readingState(conn,first.id);await owner.saveNote(files[0],first,state);
     const record=owner.registry.notes[`${files[0].libraryID}:${article.key}:${first.sha256}`];
     const managed=await Zotero.Items.getByLibraryAndKeyAsync(files[0].libraryID,record.noteKey);
     check("deleted source note disappears from generated note",!managed.getNote().includes("更新后的心得"));

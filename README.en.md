@@ -19,19 +19,21 @@ Sync is **manual and one-way, EasyRead → Zotero**. It does not create native Z
 
 ## Installation
 
-Real integration tests cover **Windows, Zotero 10.0.5-beta.2, and EasyRead desktop 1.3.0**. Other Zotero 8–10 versions and other platforms are unverified.
+Real integration tests cover **Windows, Zotero 10.0.5-beta.2, and EasyRead 1.3.0 / 1.3.2**. Other Zotero 8–10 versions and other platforms are unverified.
 
-1. Download the XPI from [Releases](../../releases).
+1. Download the latest XPI from [Releases](https://github.com/apple5089/zotero-easyread/releases).
 2. In Zotero, open Tools → Plugins → gear menu → Install Plugin From File.
-3. Start EasyRead. In Tools → EasyRead connection settings, configure its executable path and data directory (default: `~/EasyRead`). Menu labels are currently Chinese.
+3. Start EasyRead. In Tools → EasyRead connection settings, configure its executable path. Discovery checks the configured data directory, `<installation>/data`, then `~/EasyRead`. Menu labels are currently Chinese.
 4. Right-click an item/PDF → Zotero → EasyRead → `用 EasyRead 阅读`.
 5. After reading, choose `同步 EasyRead 阅读笔记` on the same item.
 
-The first single-paper import requests translation by default; this can be disabled in settings. Batch import never starts translation automatically. Without the optional desktop bridge, reading opens in a local browser.
+The first single-paper import requests translation by default; this can be disabled in settings. Batch import never starts translation automatically. EasyRead 1.3.1+ opens through its official desktop protocol, without an archive patch. Older unpatched releases open in a local browser.
 
 PDFs must be downloaded locally and at most 200 MB. A regular item uses its preferred PDF; selecting an attachment explicitly chooses that PDF. Standalone PDFs need a parent item before note sync. Read-only libraries cannot receive notes.
 
-## Optional desktop bridge
+## Optional desktop bridge for EasyRead 1.3.0 only
+
+EasyRead 1.3.1+ uses official `easyread://open` links and needs no desktop patch. See [EasyRead's API contract](https://github.com/Edwardxlai/easyread/blob/main/docs/api.md).
 
 Requires Python 3.10+ and PowerShell 7+. Close EasyRead normally, then run from the source or release ZIP:
 
@@ -49,7 +51,7 @@ EasyRead upgrades may replace this patch; browser reading remains available. To 
 Node.js 22+ and Python 3.10+, with no third-party npm/pip dependencies:
 
 ```bash
-node --test tests/core.test.cjs
+node --test tests/core.test.cjs tests/compat.test.cjs
 python -m unittest discover -s tests -p "test_*.py" -v
 python build.py
 ```

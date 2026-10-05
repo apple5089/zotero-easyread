@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: MIT */
 var ZoteroEasyRead = {
   pluginID: "zotero-easyread@local.research",
-  version: "0.1.0",
+  version: "0.1.1",
   menus: [],
   busy: false,
   prefs: "extensions.zotero-easyread.",
@@ -9,7 +9,12 @@ var ZoteroEasyRead = {
   defaultExecutable() { return PathUtils.join(Services.env.get("ProgramFiles") || "C:\\Program Files", "EasyRead", "EasyRead.exe"); },
 
   pref(key, fallback) { return Zotero.Prefs.get(this.prefs + key, true) ?? fallback; },
-  home() { return this.pref("home", PathUtils.join(Services.dirsvc.get("Home", Components.interfaces.nsIFile).path, "EasyRead")); },
+  legacyHome() { return PathUtils.join(Services.dirsvc.get("Home", Components.interfaces.nsIFile).path, "EasyRead"); },
+  home() { return this.resolvedHome || this.pref("home", this.legacyHome()); },
+  homeCandidates() {
+    const executable = this.pref("executable", this.defaultExecutable());
+    return [...new Set([this.pref("home",this.legacyHome()),PathUtils.join(PathUtils.parent(executable),"data"),this.legacyHome()].filter(Boolean))];
+  },
   bridgeDir() { return PathUtils.join(this.home(), "zotero-bridge"); },
   registryPath() { return PathUtils.join(Zotero.Profile.dir, "zotero-easyread.json"); },
   async readJSON(path, fallback = null) {
@@ -82,7 +87,7 @@ var ZoteroEasyRead = {
           const conn = await this.connect();
           const imported = [];
           for (const file of files) imported.push(await this.ensurePaper(file, conn, action === "open" && this.pref("translate", true)));
-          await this.navigate(conn, action === "open" ? imported[0].id : "");
+          await this.navigate(conn, action === "open" ? imported[0].id : "", "", action === "open" ? imported[0].sha256 : "");
           result = `已发送 ${imported.length} 篇${action === "batch" ? "，未自动翻译，可在 EasyRead 中选择翻译" : "，已打开 EasyRead"}。`;
         }
       }
@@ -107,14 +112,28 @@ var ZoteroEasyRead = {
     }
   },
   async probe() {
-    const info = await this.readJSON(PathUtils.join(this.home(), ".server.json"), {});
-    if (!EasyReadCore.validBase(info.url)) return null;
-    try {
-      const response = await Zotero.HTTP.request("GET", info.url + "/api/library", {responseType:"json",timeout:2500,followRedirects:false});
-      const library = response.response;
-      if (!library?.token || !Array.isArray(library.items)) return null;
-      return {url:info.url, token:library.token, library};
-    } catch (_) { return null; }
+    for (const home of this.homeCandidates()) {
+      const info = await this.readJSON(PathUtils.join(home, ".server.json"), {});
+      if (!EasyReadCore.validBase(info.url)) continue;
+      const options = {responseType:"json",timeout:2500,followRedirects:false};
+      let api = 0, version = "";
+      try {
+        const response = await Zotero.HTTP.request("GET",info.url + "/api/version",options);
+        if (response.response?.api !== 1) throw new Error("EasyRead API 版本不兼容，请更新 Zotero EasyRead 插件。");
+        api = 1; version = response.response.version || "";
+      } catch (error) {
+        if (error.message?.includes("API 版本不兼容")) throw error;
+        if (error.status !== 404) continue; // EasyRead 1.3.0 did not expose /api/version.
+      }
+      try {
+        const response = await Zotero.HTTP.request("GET",info.url + "/api/library",options);
+        const library = response.response;
+        if (!library?.token || !Array.isArray(library.items)) continue;
+        this.resolvedHome = home;
+        return {url:info.url,token:library.token,library,home,api,version};
+      } catch (_) {}
+    }
+    return null;
   },
   launch() {
     const executable = this.pref("executable", this.defaultExecutable());
@@ -185,8 +204,18 @@ var ZoteroEasyRead = {
     await this.writeJSON(this.registryPath(), this.registry);
     return {id,sha256};
   },
-  async navigate(conn, id, anchor = "") {
+  async navigate(conn, id, anchor = "", sha256 = "") {
     if (id && !EasyReadCore.validID(id)) throw new Error("无效的 EasyRead 论文标识。");
+    if (conn.api === 1) {
+      const target = id ? EasyReadCore.officialOpen(id,anchor,sha256) : "";
+      const executable = this.pref("executable",this.defaultExecutable());
+      if (await IOUtils.exists(executable)) {
+        try { await Zotero.Utilities.Internal.exec(executable,target ? ["easyread://" + target] : []); return; }
+        catch (error) { Zotero.logError(error); }
+      }
+      Zotero.launchURL(conn.url + (target ? "/" + target : "/"));
+      return;
+    }
     const nonce = Services.uuid.generateUUID().toString().replace(/[{}-]/g, "");
     await this.writeJSON(PathUtils.join(this.bridgeDir(), "open.json"), {schema:1,nonce,id,anchor:String(anchor).slice(0,256),at:Date.now(),url:conn.url});
     this.launch();
@@ -209,7 +238,7 @@ var ZoteroEasyRead = {
       const files = await this.prepare([attachment]);
       const conn = await this.connect();
       const paper = await this.ensurePaper(files[0], conn, false);
-      await this.navigate(conn, paper.id, anchor);
+      await this.navigate(conn, paper.id, anchor, paper.sha256);
     } finally { this.busy = false; }
   },
   async saveNote(file, mapping, state) {
@@ -237,6 +266,11 @@ var ZoteroEasyRead = {
     await this.writeJSON(this.registryPath(), this.registry);
     return {changed:true,preserved};
   },
+  async readingState(conn,id) {
+    const parts = ["paper","reader",...(this.pref("includeAI",true) ? ["discussion"] : [])];
+    const responses = await Promise.all(parts.map(part => this.request(conn,`/api/p/${id}/part/${part}`)));
+    return Object.fromEntries(parts.map((part,i) => [part,responses[i]?.data || {}]));
+  },
   async sync(files) {
     const conn = await this.connect();
     let changed = 0, preserved = 0; const failures = [], seen = new Set();
@@ -248,7 +282,7 @@ var ZoteroEasyRead = {
         if (seen.has(key)) continue; seen.add(key);
         // Also supports PDFs imported manually into EasyRead before installing this plugin.
         if (!conn.library.items.some(p => p.id === id)) throw new Error("尚未在 EasyRead 中导入，请先右键“用 EasyRead 阅读”。");
-        const state = await this.request(conn, `/api/p/${id}/state`);
+        const state = await this.readingState(conn,id);
         if (state.paper?.meta?.source_sha256 !== sha256) throw new Error("PDF 指纹不一致，已停止回写。");
         const mapping = {id,sha256};
         this.registry.attachments[file.mapKey] = {...mapping,parentKey:file.parent?.key,libraryID:file.libraryID,attachmentKey:file.attachmentKey,title:file.title};

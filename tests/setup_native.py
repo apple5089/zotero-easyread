@@ -21,7 +21,7 @@ for name in ['alpha','beta']:(work/f'fixtures/{name}.pdf').write_bytes(pdf('TEST
 (home/'config.json').write_text(json.dumps({'engine':'none','auto_translate':False,'check_updates':False}),encoding='utf-8')
 prefs={'extensions.zotero.useDataDir':True,'extensions.zotero.dataDir':str(data),'extensions.zotero.firstRun2':False,
        'extensions.zotero.httpServer.enabled':True,'extensions.zotero.httpServer.port':23139,
-       'extensions.zotero.sync.autoSync':False,'app.update.enabled':False,'extensions.autoDisableScopes':0,
+       'extensions.zotero.sync.autoSync':False,'app.update.auto':False,'app.update.background.enabled':False,'extensions.autoDisableScopes':0,
        'extensions.enabledScopes':15,'extensions.zotero-easyread.home':str(home)}
 (profile/'prefs.js').write_text('\n'.join(f'user_pref({json.dumps(k)}, {json.dumps(v)});' for k,v in prefs.items()),encoding='utf-8')
 manifest=json.loads((ROOT/'zotero/manifest.json').read_text(encoding='utf-8'))
