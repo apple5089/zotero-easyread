@@ -32,6 +32,6 @@ bootstrap+='\nconst TEST_ROOT='+json.dumps(str(work))+';\n'
 bootstrap+=(ROOT/'tests/native_harness.js').read_text(encoding='utf-8')
 with zipfile.ZipFile(profile/'extensions/easyread-native-test@local.research.xpi','w',zipfile.ZIP_DEFLATED) as z:
     z.writestr('manifest.json',json.dumps(manifest));z.writestr('bootstrap.js',bootstrap)
-    z.write(ROOT/'zotero/core.js','core.js')
+    for name in ['core.js','prefs.js','prefs.xhtml']:z.write(ROOT/'zotero'/name,name)
     z.writestr('bridge.js',(ROOT/'zotero/bridge.js').read_text(encoding='utf-8').replace('zotero-easyread@local.research','easyread-native-test@local.research'))
 print(profile)
