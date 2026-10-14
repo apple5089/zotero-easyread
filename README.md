@@ -19,11 +19,11 @@
 
 ## 安装
 
-已做真实软件测试的环境为 **Windows、Zotero 10.0.5-beta.2、EasyRead 1.3.0 与 1.3.2**。其他 Zotero 8–10 版本和其他平台尚未完成真实集成测试，不能保证兼容。
+已做真实软件测试的环境为 **Windows、Zotero 10.0.5-beta.2、EasyRead 1.3.0 与 1.3.2**，以及 **macOS、Zotero 10.0.6、EasyRead 1.4.2**。其他 Zotero 8–10 版本和其他平台尚未完成真实集成测试，不能保证兼容。
 
-1. 从本仓库 [Releases](https://github.com/apple5089/zotero-easyread/releases) 下载最新 XPI。
+1. 从本仓库 [Releases](https://github.com/apple5089/zotero-easyread/releases) 下载最新 XPI，或在仓库根目录运行 `python build.py`（只用 Python 3 标准库）生成 `dist/zotero-easyread-<版本>.xpi`。
 2. Zotero → 工具 → 插件 → 齿轮菜单 → 从文件安装插件，选择 XPI。
-3. 启动 EasyRead。Zotero → 工具 → EasyRead：连接设置，填写 EasyRead 可执行文件路径；插件会依次检查已设置的目录、安装目录下的 `data` 和用户目录下的 `EasyRead`。
+3. 启动 EasyRead。装在默认位置（Windows `C:\Program Files\EasyRead\EasyRead.exe`，macOS `/Applications/EasyRead.app`）时无需设置；否则在 Zotero → 工具 → EasyRead：连接设置（即 Zotero 设置里的 EasyRead 页）填写 EasyRead 程序路径；插件会依次检查已设置的目录、安装目录下的 `data` 和用户目录下的 `EasyRead`。
 4. 右键文献或已下载的 PDF 附件 → **Zotero → EasyRead** 子菜单 → 用 EasyRead 阅读。
 5. 阅读后在同一条目上执行“同步 EasyRead 阅读笔记”。
 

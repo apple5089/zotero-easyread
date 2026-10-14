@@ -1,13 +1,13 @@
 const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm');
 const fs=require('node:fs'),path=require('node:path');
 const core=require('../zotero/core.js');
-function bridge(prefs={},http=async()=>{throw {status:404};}) {
+function bridge(prefs={},http=async()=>{throw {status:404};},mac=false) {
   const calls=[],launched=[],reads=[];
   const ctx={EasyReadCore:core,Components:{interfaces:{nsIFile:{}}},
-    PathUtils:{join:path.win32.join,parent:path.win32.dirname},
+    PathUtils:mac?{join:path.posix.join,parent:path.posix.dirname}:{join:path.win32.join,parent:path.win32.dirname},
     Services:{env:{get:()=> 'C:\\Program Files'},dirsvc:{get:()=>({path:'C:\\User'})}},
     IOUtils:{exists:async()=>true},
-    Zotero:{Prefs:{get:key=>prefs[key.replace('extensions.zotero-easyread.','')]},
+    Zotero:{isMac:mac,Prefs:{get:key=>prefs[key.replace('extensions.zotero-easyread.','')]},
       HTTP:{request:async(method,url)=>{calls.push(url);return http(url);}},
       Utilities:{Internal:{exec:async(exe,args)=>launched.push({exe,args})}},
       logError(){},launchURL:url=>launched.push({url})}};
@@ -48,4 +48,10 @@ test('read only documented parts and never the side-effecting state endpoint',as
 test('batch import focuses native application without opening a browser tab',async()=>{
   const b=bridge();await b.owner.navigate({api:1,url:'http://127.0.0.1:52341'},'');
   assert.equal(b.launched.length,1);assert.equal(b.launched[0].args.length,0);
+});
+test('macOS opens the .app bundle through open -a, blank settings use the default',async()=>{
+  const b=bridge({executable:''},undefined,true);
+  await b.owner.navigate({api:1,url:'http://127.0.0.1:52341'},'abcdef123456','p3-2','a'.repeat(64));
+  assert.equal(b.launched[0].exe,'/usr/bin/open');
+  assert.deepEqual([...b.launched[0].args],['-a','/Applications/EasyRead.app','easyread://open?sha256='+'a'.repeat(64)+'&block=p3-2']);
 });

@@ -1,0 +1,21 @@
+<vbox id="zotero-easyread-prefs-root">
+	<groupbox>
+		<label><html:h2>EasyRead 连接</html:h2></label>
+		<label value="EasyRead 程序路径（留空自动检测）"/>
+		<html:input type="text" id="zotero-easyread-executable" preference="extensions.zotero-easyread.executable"
+			placeholder="macOS：/Applications/EasyRead.app；Windows：C:\Program Files\EasyRead\EasyRead.exe"/>
+		<label value="EasyRead 数据目录，含 .server.json（留空自动检测）"/>
+		<html:input type="text" id="zotero-easyread-home" preference="extensions.zotero-easyread.home"
+			placeholder="~/EasyRead；Windows 新版为 &lt;安装目录&gt;\data"/>
+	</groupbox>
+	<groupbox>
+		<label><html:h2>阅读与同步</html:h2></label>
+		<checkbox id="zotero-easyread-translate" preference="extensions.zotero-easyread.translate" native="true"
+			label="首次单篇阅读自动翻译（使用 EasyRead 已配置模型）"/>
+		<checkbox id="zotero-easyread-includeAI" preference="extensions.zotero-easyread.includeAI" native="true"
+			label="同步保存到页边的 AI 回答，不同步完整聊天记录"/>
+		<checkbox id="zotero-easyread-englishContext" preference="extensions.zotero-easyread.englishContext" native="true"
+			label="在摘录下附上对应段落英文"/>
+		<description>批量发送始终先不翻译。同步方向为 EasyRead → Zotero；在 Zotero 手动编辑专属笔记后，同步会保留旧版本。</description>
+	</groupbox>
+</vbox>

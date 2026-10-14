@@ -19,11 +19,11 @@ Sync is **manual and one-way, EasyRead → Zotero**. It does not create native Z
 
 ## Installation
 
-Real integration tests cover **Windows, Zotero 10.0.5-beta.2, and EasyRead 1.3.0 / 1.3.2**. Other Zotero 8–10 versions and other platforms are unverified.
+Real integration tests cover **Windows, Zotero 10.0.5-beta.2, and EasyRead 1.3.0 / 1.3.2**, and **macOS, Zotero 10.0.6, and EasyRead 1.4.2**. Other Zotero 8–10 versions and other platforms are unverified.
 
-1. Download the latest XPI from [Releases](https://github.com/apple5089/zotero-easyread/releases).
+1. Download the latest XPI from [Releases](https://github.com/apple5089/zotero-easyread/releases), or run `python build.py` in the repository root (Python 3 standard library only) to build `dist/zotero-easyread-<version>.xpi`.
 2. In Zotero, open Tools → Plugins → gear menu → Install Plugin From File.
-3. Start EasyRead. In Tools → EasyRead connection settings, configure its executable path. Discovery checks the configured data directory, `<installation>/data`, then `~/EasyRead`. Menu labels are currently Chinese.
+3. Start EasyRead. Default locations (`C:\Program Files\EasyRead\EasyRead.exe` on Windows, `/Applications/EasyRead.app` on macOS) need no setup; otherwise set its executable path in Tools → EasyRead connection settings, which opens the EasyRead pane in Zotero Settings. Discovery checks the configured data directory, `<installation>/data`, then `~/EasyRead`. Menu labels are currently Chinese.
 4. Right-click an item/PDF → Zotero → EasyRead → `用 EasyRead 阅读`.
 5. After reading, choose `同步 EasyRead 阅读笔记` on the same item.
 
